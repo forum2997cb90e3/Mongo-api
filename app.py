@@ -1,22 +1,29 @@
-from flask import Flask, jsonify
-from pymongo import MongoClient, errors
+from pymongo import MongoClient
+import json
 
-app = Flask(__name__)
+# Замените на вашу строку подключения
+uri = "mongodb+srv://admin:123456qwerty@cluster0.mvdyb6h.mongodb.net/?appName=Cluster0"
 
-# 🔗 Прямое подключение (без .env)
-client = MongoClient("mongodb+srv://admin:123456qwerty@cluster0.mvdyb6h.mongodb.net/?appName=Cluster0")
-db = client["bot"]
-users_col = db["users"]
-
-@app.route("/users/count", methods=["GET"])
-def count_users():
+def get_all_users():
+    client = MongoClient(uri)
+    
     try:
-        total = users_col.count_documents({})
-        return jsonify({"total_users": total}), 200
-    except errors.PyMongoError as e:
-        return jsonify({"error": f"DB error: {str(e)}"}), 500
+        db = client["bot"]
+        collection = db["users"]
+        
+        # Получить все документы
+        users = collection.find({})
+        
+        print("Все пользователи:\n")
+        for user in users:
+            user['_id'] = str(user['_id'])  # ObjectId не сериализуется в JSON
+            print(json.dumps(user, indent=2, ensure_ascii=False))
+            print("---")
+            
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Ошибка: {e}")
+    finally:
+        client.close()
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    get_all_users()
